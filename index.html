@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#14233f" />
+  <title>복리 계산기</title>
+  <style>
+    :root {
+      --navy: #14233f;
+      --blue: #315efb;
+      --bg: #f3f5f9;
+      --muted: #7b8495;
+      --line: #e7eaf0;
+      --green: #16865b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: #182238;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      padding: 24px 16px 40px;
+    }
+    .app { max-width: 520px; margin: 0 auto; }
+    header { margin: 8px 2px 22px; }
+    h1 { font-size: 27px; margin: 0 0 7px; letter-spacing: -1px; color: var(--navy); }
+    .subtitle { color: var(--muted); font-size: 13px; }
+    .card {
+      background: white; border-radius: 20px; padding: 20px;
+      box-shadow: 0 8px 28px rgba(20,35,63,.06); margin-bottom: 14px;
+    }
+    .field { margin-bottom: 19px; }
+    .field:last-child { margin-bottom: 0; }
+    label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 9px; }
+    .input-wrap { position: relative; }
+    input[type="number"] {
+      width: 100%; border: 1px solid var(--line); border-radius: 12px;
+      padding: 15px 48px 15px 14px; font-size: 17px; font-weight: 650;
+      color: var(--navy); outline: none; background: #fff;
+    }
+    input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(49,94,251,.10); }
+    .suffix { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 13px; }
+    .unit-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-bottom: 10px; }
+    .unit-tabs button {
+      border: 1px solid var(--line); background: #f8f9fc; color: #687286;
+      padding: 11px 5px; border-radius: 10px; font-size: 14px; font-weight: 700;
+    }
+    .unit-tabs button.active { background: var(--navy); color: white; border-color: var(--navy); }
+    .hint { color: var(--muted); font-size: 11px; margin-top: 7px; line-height: 1.5; }
+    .calculate {
+      width: 100%; border: 0; border-radius: 13px; padding: 16px;
+      color: white; background: var(--blue); font-size: 16px; font-weight: 750;
+      margin-top: 3px; cursor: pointer;
+    }
+    .result-label { color: #cbd5e8; font-size: 13px; margin-bottom: 9px; }
+    .result-card { background: var(--navy); color: white; }
+    .result-amount { font-size: clamp(28px, 8vw, 38px); font-weight: 800; letter-spacing: -1.3px; overflow-wrap: anywhere; }
+    .result-unit { color: #cbd5e8; font-size: 12px; margin-top: 8px; }
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+    .stat { background: rgba(255,255,255,.09); border-radius: 12px; padding: 12px; min-width: 0; }
+    .stat-name { font-size: 11px; color: #cbd5e8; margin-bottom: 7px; }
+    .stat-value { font-size: 16px; font-weight: 750; overflow-wrap: anywhere; }
+    .green { color: #75e0b3; }
+    .section-title { font-size: 15px; font-weight: 800; margin: 0 0 15px; }
+    .bar { height: 12px; display: flex; overflow: hidden; border-radius: 20px; background: #edf0f5; }
+    .bar-principal { background: #9aa9c4; }
+    .bar-profit { background: var(--blue); }
+    .legend { display: flex; justify-content: space-between; gap: 10px; margin-top: 12px; font-size: 11px; color: var(--muted); }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+    .disclaimer { color: #929aaa; font-size: 10px; line-height: 1.6; text-align: center; padding: 5px 12px 0; }
+    @media (max-width: 360px) {
+      body { padding-left: 11px; padding-right: 11px; }
+      .card { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1>복리 계산기</h1>
+      <div class="subtitle">기간과 수익률을 입력해 미래 자산을 계산해 보세요.</div>
+    </header>
+
+    <section class="card">
+      <div class="field">
+        <label for="principal">초기 투자금</label>
+        <div class="input-wrap">
+          <input id="principal" type="number" min="0" step="10000" value="10000000" inputmode="decimal">
+          <span class="suffix">원</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="rate">수익률</label>
+        <div class="input-wrap">
+          <input id="rate" type="number" min="-99.99" max="1000" step="0.1" value="5" inputmode="decimal">
+          <span class="suffix">%</span>
+        </div>
+        <div class="hint">선택한 기간 단위마다 적용되는 수익률입니다. 예: 월 선택 후 2% 입력 시 매월 2% 복리</div>
+      </div>
+
+      <div class="field">
+        <label>기간 단위</label>
+        <div class="unit-tabs" role="group" aria-label="기간 단위 선택">
+          <button type="button" class="active" data-unit="year">연</button>
+          <button type="button" data-unit="month">월</button>
+          <button type="button" data-unit="day">일</button>
+        </div>
+        <label for="period">투자 기간</label>
+        <div class="input-wrap">
+          <input id="period" type="number" min="1" step="1" value="10" inputmode="numeric">
+          <span class="suffix" id="periodSuffix">년</span>
+        </div>
+      </div>
+
+      <button class="calculate" id="calculateBtn" type="button">계산하기</button>
+    </section>
+
+    <section class="card result-card" aria-live="polite">
+      <div class="result-label">예상 최종 자산</div>
+      <div class="result-amount" id="finalAmount">₩16,288,946</div>
+      <div class="result-unit" id="calculationBasis">10년 동안 연 5% 복리 적용</div>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-name">투자 원금</div>
+          <div class="stat-value" id="principalResult">₩10,000,000</div>
+        </div>
+        <div class="stat">
+          <div class="stat-name">예상 수익</div>
+          <div class="stat-value green" id="profitResult">+₩6,288,946</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">자산 구성</h2>
+      <div class="bar">
+        <div class="bar-principal" id="principalBar" style="width:61.4%"></div>
+        <div class="bar-profit" id="profitBar" style="width:38.6%"></div>
+      </div>
+      <div class="legend">
+        <span><i class="dot" style="background:#9aa9c4"></i>투자 원금 <b id="principalPercent">61.4%</b></span>
+        <span><i class="dot" style="background:#315efb"></i>예상 수익 <b id="profitPercent">38.6%</b></span>
+      </div>
+    </section>
+
+    <p class="disclaimer">계산 결과는 입력한 수익률이 일정하게 유지된다고 가정한 예시이며, 실제 투자 수익을 보장하지 않습니다. 세금·수수료·손실 가능성은 반영하지 않았습니다.</p>
+  </main>
+
+  <script>
+    let selectedUnit = "year";
+    const $ = (id) => document.getElementById(id);
+    const money = (value) => "₩" + Math.round(value).toLocaleString("ko-KR");
+    const unitNames = { year: "년", month: "개월", day: "일" };
+    const unitLabels = { year: "연", month: "월", day: "일" };
+
+    document.querySelectorAll(".unit-tabs button").forEach((button) => {
+      button.addEventListener("click", () => {
+        selectedUnit = button.dataset.unit;
+        document.querySelectorAll(".unit-tabs button").forEach((b) => b.classList.toggle("active", b === button));
+        $("periodSuffix").textContent = unitNames[selectedUnit];
+        $("period").value = 10;
+        calculate();
+      });
+    });
+
+    function calculate() {
+      const principal = Number($("principal").value);
+      const ratePercent = Number($("rate").value);
+      const periods = Math.floor(Number($("period").value));
+
+      if (!Number.isFinite(principal) || principal < 0 ||
+          !Number.isFinite(ratePercent) || ratePercent <= -100 || ratePercent > 1000 ||
+          !Number.isFinite(periods) || periods < 1) {
+        alert("초기 투자금, 수익률, 투자 기간을 올바르게 입력해 주세요. 수익률은 -100% 초과, 1000% 이하로 입력할 수 있습니다.");
+        return;
+      }
+
+      const periodicRate = ratePercent / 100;
+      const finalValue = principal * Math.pow(1 + periodicRate, periods);
+      const profit = finalValue - principal;
+      const principalShare = finalValue > 0 ? Math.max(0, Math.min(100, principal / finalValue * 100)) : 0;
+      const profitShare = 100 - principalShare;
+
+      $("finalAmount").textContent = money(finalValue);
+      $("principalResult").textContent = money(principal);
+      $("profitResult").textContent = (profit >= 0 ? "+" : "") + money(profit);
+      $("calculationBasis").textContent =
+        `${periods.toLocaleString("ko-KR")}${unitNames[selectedUnit]} 동안 ${unitLabels[selectedUnit]} ${ratePercent}% 복리 적용`;
+      $("principalBar").style.width = principalShare + "%";
+      $("profitBar").style.width = profitShare + "%";
+      $("principalPercent").textContent = principalShare.toFixed(1) + "%";
+      $("profitPercent").textContent = profitShare.toFixed(1) + "%";
+    }
+
+    $("calculateBtn").addEventListener("click", calculate);
+    ["principal", "rate", "period"].forEach(id => $(id).addEventListener("keydown", e => {
+      if (e.key === "Enter") calculate();
+    }));
+    calculate();
+  </script>
+</body>
+</html>
